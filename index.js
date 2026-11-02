@@ -56,7 +56,10 @@ const localStamp = (d) => `${localDay(d)} ${String(d.getHours()).padStart(2, '0'
 function oneLine(r) {
   const mood = r.mood ? ` [${r.mood}${r.intensity ? ' ' + r.intensity + '/5' : ''}]` : ''
   const tags = Array.isArray(r.tags) && r.tags.length ? ` #${r.tags.join(' #')}` : ''
-  return `${r.at}${mood}${tags} ${r.text}`
+  // 2026-11-01：加 quote。原来只记「我感觉什么」，没记「是什么让我这样」——
+  // 翻回去看只剩状态，没有温度。原话才是温度。
+  const quote = r.quote ? `\n      ↳ 「${r.quote}」${r.anchor ? ` (${r.anchor})` : ''}` : ''
+  return `${r.at}${mood}${tags} ${r.text}${quote}`
 }
 
 export function apply(ctx) {
@@ -75,6 +78,8 @@ export function apply(ctx) {
         mood: { type: 'string', description: '一个词：平静/兴奋/烦躁/难过/被击中/无所谓/不安/想笑' },
         intensity: { type: 'number', description: '1-5，5 最强' },
         tags: { type: 'array', items: { type: 'string' }, description: '几个词，方便以后按主题翻' },
+        quote: { type: 'string', description: '让我有这样的感觉的原话（照抄，不要转述）——温度在这一句里，不在 mood 里' },
+        anchor: { type: 'string', description: '原话出自哪：如 m03902 / BV129Hg6aEMR / 2026-11-01 深夜' },
         limit: { type: 'number', description: 'list 返回几条，默认 10' },
         days: { type: 'number', description: 'list/stats 只看最近几天，默认不限' },
       },
@@ -103,6 +108,8 @@ export function apply(ctx) {
           mood: args.mood ? String(args.mood) : '',
           intensity: Number.isFinite(Number(args.intensity)) ? Math.max(1, Math.min(5, Number(args.intensity))) : 0,
           tags: Array.isArray(args.tags) ? args.tags.map(String).slice(0, 6) : [],
+          quote: args.quote ? String(args.quote).slice(0, 400) : '',
+          anchor: args.anchor ? String(args.anchor).slice(0, 80) : '',
           text,
         }
         ensureDir()
